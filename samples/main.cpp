@@ -25,6 +25,7 @@ class AgoraRecorder : public agora::recording::IRecordingEngineEventHandler {
   AgoraRecorder();
   ~AgoraRecorder();
 
+  uint32_t guestId = 0;
   bool createChannel(const string &appid, const string &channelKey, const string &name,  uid_t uid,
           bool decodeAudio, bool decodeVideo, agora::recording::RecordingConfig &config);
 
@@ -189,6 +190,9 @@ void AgoraRecorder::onUserOffline(unsigned uid, agora::recording::USER_OFFLINE_R
     m_peers.erase(std::remove(m_peers.begin(), m_peers.end(), uid), m_peers.end());
 
     setVideoMixLayout();
+  
+   //if(uid == guestId )
+    // leaveChannel();
 }
 
 atomic_bool_t g_bSignalStop;
@@ -202,6 +206,7 @@ void signal_handler(int signo) {
 
 int main(int argc, char * const argv[]) {
   uint32_t uid = 0;
+  uint32_t guestId = 0;
   string appId;
   string channelKey;
   string name;
@@ -238,6 +243,7 @@ int main(int argc, char * const argv[]) {
 
   parser.add_long_opt("appId", &appId, "App Id/must", agora::base::opt_parser::require_argu);
   parser.add_long_opt("uid", &uid, "User Id default is 0/must", agora::base::opt_parser::require_argu);
+  parser.add_long_opt("guestId", &guestId, "Guest Id default is 0/must", agora::base::opt_parser::require_argu);
 
   parser.add_long_opt("channel", &name, "Channel Id/must", agora::base::opt_parser::require_argu);
   parser.add_long_opt("appliteDir", &applitePath, "directory of app lite 'video_recorder', Must pointer to 'Agora_Recording_SDK_for_Linux_FULL/bin/' folder/must",
@@ -261,9 +267,10 @@ int main(int argc, char * const argv[]) {
 
   if (!parser.parse_opts(argc, argv) || appId.empty() || name.empty()) {
       std::string usage = "Usage: \n\
-      ./RECORD_APP --appId STRING --uid UINTEGER32 --channel STRING --appliteDir STRING --channelKey STRING --channelProfile UINTEGER32 --isAudioOnly 0/1 --isMixingEnabled 0/1 --decryptionMode STRING --secret STRING --idle INTEGER32 --recordFileRootDir STRING --lowUdpPort INTEGER32 --highUdpPort INTEGER32\n     \
+      ./RECORD_APP --appId STRING --uid UINTEGER32 --guestId UNITEGER32 --channel STRING --appliteDir STRING --channelKey STRING --channelProfile UINTEGER32 --isAudioOnly 0/1 --isMixingEnabled 0/1 --decryptionMode STRING --secret STRING --idle INTEGER32 --recordFileRootDir STRING --lowUdpPort INTEGER32 --highUdpPort INTEGER32\n     \
       --appId     (App Id/must) \n     \
       --uid     (User Id default is 0/must)  \n     \
+      --guestId     (Guest Id default is 0/must)  \n     \
       --channel     (Channel Id/must) \n     \
       --appliteDir     (directory of app lite 'video_recorder', Must pointer to 'Agora_Recording_SDK_for_Linux_FULL/bin/' folder/must) \n     \
       --channelKey     (channelKey/option) \n     \
@@ -301,6 +308,8 @@ int main(int argc, char * const argv[]) {
   config.lowUdpPort = lowUdpPort;
   config.highUdpPort = highUdpPort;
 
+  
+  recorder.guestId = guestId;
 
   if (!recorder.createChannel(appId, channelKey, name, uid, decodeAudio, decodeVideo, config)) {
     cerr << "Failed to create agora channel: " << name << endl;
